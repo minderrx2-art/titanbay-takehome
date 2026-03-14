@@ -78,7 +78,7 @@ func (h *Handler) handleUpdateFund(w http.ResponseWriter, r *http.Request) {
 	var input domain.Fund
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
