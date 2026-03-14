@@ -49,7 +49,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:    ":8080",
-		Handler: mux,
+		Handler: handler.LoggingMiddleware(mux),
 	}
 
 	srvErrors := make(chan error, 1)
