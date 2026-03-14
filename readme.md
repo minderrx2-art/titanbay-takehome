@@ -1,3 +1,8 @@
+## How to run server (Requires Docker)
+```bash
+docker compose up --build
+```
+
 ## Endpoints
 ```bash
 # List all funds
