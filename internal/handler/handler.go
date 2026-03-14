@@ -64,6 +64,16 @@ func (h *Handler) handleCreateFund(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.Name == nil || input.VintageYear == nil || input.TargetSizeUSD == nil || input.Status == nil {
+		http.Error(w, "name, vintage_year, target_size_usd and status are required", http.StatusBadRequest)
+		return
+	}
+
+	if *input.Name == "" || *input.VintageYear < 1900 || *input.TargetSizeUSD <= 0 || *input.Status == "" {
+		http.Error(w, "name, vintage_year, target_size_usd and status cannot be empty", http.StatusBadRequest)
+		return
+	}
+
 	newFund, err := h.service.Funds.CreateFund(input)
 	if err != nil {
 		http.Error(w, "Could not create fund", http.StatusInternalServerError)
@@ -78,22 +88,22 @@ func (h *Handler) handleUpdateFund(w http.ResponseWriter, r *http.Request) {
 	var input domain.Fund
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if input.ID == uuid.Nil {
-		http.Error(w, "Missing 'id' in request body", http.StatusBadRequest)
+		http.Error(w, "missing 'id' in request body", http.StatusBadRequest)
 		return
 	}
 
 	updatedFund, err := h.service.Funds.UpdateFund(input.ID, input)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "Fund not found", http.StatusNotFound)
+			http.Error(w, "fund not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "Update failed", http.StatusInternalServerError)
+		http.Error(w, "update failed", http.StatusInternalServerError)
 		return
 	}
 
@@ -105,17 +115,17 @@ func (h *Handler) handleGetFundByID(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		http.Error(w, "Invalid UUID format", http.StatusBadRequest)
+		http.Error(w, "invalid UUID format", http.StatusBadRequest)
 		return
 	}
 
 	fund, err := h.service.Funds.GetFundByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "Fund not found", http.StatusNotFound)
+			http.Error(w, "fund not found", http.StatusNotFound)
 			return
 		}
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -126,7 +136,7 @@ func (h *Handler) handleGetFundByID(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetInvestors(w http.ResponseWriter, r *http.Request) {
 	investors, err := h.service.Investors.GetAllInvestors()
 	if err != nil {
-		http.Error(w, "Failed to retrieve investors", http.StatusInternalServerError)
+		http.Error(w, "failed to retrieve investors", http.StatusInternalServerError)
 		return
 	}
 
@@ -138,18 +148,23 @@ func (h *Handler) handleCreateInvestor(w http.ResponseWriter, r *http.Request) {
 	var input domain.Investor
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	if input.Email == "" || input.Name == "" {
-		http.Error(w, "Name and Email are required", http.StatusBadRequest)
+	if input.Email == nil || input.Name == nil || input.InvestorType == nil {
+		http.Error(w, "name, email, and investor_type are required", http.StatusBadRequest)
+		return
+	}
+
+	if *input.Email == "" || *input.Name == "" || *input.InvestorType == "" {
+		http.Error(w, "name, email, and investor_type cannot be empty", http.StatusBadRequest)
 		return
 	}
 
 	newInvestor, err := h.service.Investors.CreateInvestor(input)
 	if err != nil {
-		http.Error(w, "Could not create investor", http.StatusInternalServerError)
+		http.Error(w, "could not create investor", http.StatusInternalServerError)
 		return
 	}
 
@@ -161,13 +176,13 @@ func (h *Handler) handleGetFundInvestments(w http.ResponseWriter, r *http.Reques
 	idStr := r.PathValue("fund_id")
 	fundID, err := uuid.Parse(idStr)
 	if err != nil {
-		http.Error(w, "Invalid fund UUID", http.StatusBadRequest)
+		http.Error(w, "invalid fund UUID", http.StatusBadRequest)
 		return
 	}
 
 	investments, err := h.service.Investments.GetInvestmentsByFund(fundID)
 	if err != nil {
-		http.Error(w, "Failed to retrieve investments", http.StatusInternalServerError)
+		http.Error(w, "failed to retrieve investments", http.StatusInternalServerError)
 		return
 	}
 
@@ -179,13 +194,28 @@ func (h *Handler) handleCreateInvestment(w http.ResponseWriter, r *http.Request)
 	idStr := r.PathValue("fund_id")
 	fundID, err := uuid.Parse(idStr)
 	if err != nil {
-		http.Error(w, "Invalid fund UUID", http.StatusBadRequest)
+		http.Error(w, "invalid fund UUID", http.StatusBadRequest)
 		return
 	}
 
 	var input domain.Investment
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if input.InvestorID == uuid.Nil {
+		http.Error(w, "investor_id is required", http.StatusBadRequest)
+		return
+	}
+
+	if input.AmountUSD == nil || input.InvestmentDate == nil {
+		http.Error(w, "amount_usd and investment_date are required", http.StatusBadRequest)
+		return
+	}
+
+	if *input.AmountUSD <= 0 {
+		http.Error(w, "amount_usd must be greater than zero", http.StatusBadRequest)
 		return
 	}
 
@@ -193,7 +223,7 @@ func (h *Handler) handleCreateInvestment(w http.ResponseWriter, r *http.Request)
 
 	newInv, err := h.service.Investments.CreateInvestment(input)
 	if err != nil {
-		http.Error(w, "Could not record investment", http.StatusInternalServerError)
+		http.Error(w, "could not record investment", http.StatusInternalServerError)
 		return
 	}
 
