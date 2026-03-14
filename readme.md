@@ -1,5 +1,9 @@
 ## How to run server (Requires Docker)
 ```bash
+# Create .env file replace {your_password} with your database password
+echo "DB_PASSWORD={your_password}" > .env
+
+# Build and run
 docker compose up --build
 ```
 
