@@ -1,0 +1,34 @@
+services:
+  migrate:
+    build: .
+    environment:
+      - DATABASE_URL=postgres://user:${DB_PASSWORD}@db:5432/titanbay?sslmode=disable
+    command: [ "./main", "-migrate" ]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://user:${DB_PASSWORD}@db:5432/titanbay?sslmode=disable
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=titanbay
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d titanbay" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+volumes:
+  postgres_data:
